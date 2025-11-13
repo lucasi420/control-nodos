@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Control de Nodos</title>
+  <style>
+    body { font-family: sans-serif; background: #eef2ff; padding: 20px; }
+    h1 { color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px; border-bottom: 1px solid #ccc; text-align: left; }
+    th { background: #4a6cf7; color: white; }
+    input { margin: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+    button { padding: 7px 14px; border: none; background: #4a6cf7; color: white; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #324bdf; }
+  </style>
+</head>
+<body>
+  <h1>📊 Control de Nodos</h1>
+  <div>
+    <input id="nodo" placeholder="Nodo">
+    <input id="placa" placeholder="Placa">
+    <input id="puerto" placeholder="Puerto">
+    <input id="up" placeholder="Up Mbps">
+    <input id="down" placeholder="Down Mbps">
+    <input id="tecnico" placeholder="Técnico">
+    <button onclick="guardar()">Guardar</button>
+  </div>
+
+  <table>
+    <thead><tr><th>Nodo</th><th>Placa</th><th>Puerto</th><th>Up</th><th>Down</th><th>Técnico</th><th>Fecha</th></tr></thead>
+    <tbody id="tabla"></tbody>
+  </table>
+
+<script>
+const API = "/nodos";
+
+async function cargar() {
+  const res = await fetch(API);
+  const data = await res.json();
+  const tabla = document.getElementById("tabla");
+  tabla.innerHTML = "";
+  data.forEach(r => {
+    tabla.innerHTML += `<tr>
+      <td>${r.nodo}</td><td>${r.placa}</td><td>${r.puerto}</td>
+      <td>${r.bandwidth_up || ""}</td><td>${r.bandwidth_down || ""}</td>
+      <td>${r.tecnico || ""}</td><td>${r.fecha}</td>
+    </tr>`;
+  });
+}
+async function guardar() {
+  const nodo = nodoInput.value = document.getElementById("nodo").value.trim();
+  if (!nodo) return alert("Ingrese el nodo");
+
+  const body = {
+    nodo,
+    placa: document.getElementById("placa").value.trim(),
+    puerto: document.getElementById("puerto").value.trim(),
+    bandwidth_up: document.getElementById("up").value.trim(),
+    bandwidth_down: document.getElementById("down").value.trim(),
+    tecnico: document.getElementById("tecnico").value.trim()
+  };
+  await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  cargar();
+}
+
+cargar();
+</script>
+</body>
+</html>
