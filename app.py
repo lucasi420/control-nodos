@@ -1,87 +1,38 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from flask_cors import CORS
 import psycopg2
-from datetime import datetime
 import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Configuración de conexión a Neon (usa variables de entorno de Render)
-DB_URL = os.environ.get("DATABASE_URL")
+# --- Configuración de conexión a la base de datos ---
+DB_URL = os.getenv("DATABASE_URL")
 
 def get_connection():
+    """Abre una conexión con la base de datos Neon"""
     return psycopg2.connect(DB_URL)
 
-@app.route('/')
+# --- Ruta principal ---
+@app.route("/")
 def home():
-    return '✅ API funcionando correctamente - Proyecto Nodos'
+    return "✅ API funcionando correctamente - Proyecto Nodos"
 
-# Obtener todos los nodos
-@app.route('/nodos', methods=['GET'])
-def obtener_nodos():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT nodo FROM datos ORDER BY nodo;")
-    nodos = [row[0] for row in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return jsonify(nodos)
+# --- Ruta para probar conexión con Neon ---
+@app.route("/testdb")
+def testdb():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT NOW();")  # Consulta simple para verificar conexión
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "ok", "message": "Conectado a Neon", "timestamp": result[0]})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-# Obtener datos por nodo
-@app.route('/nodo/<string:nodo>', methods=['GET'])
-def obtener_datos_nodo(nodo):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT placa, puerto, bandwidth_up, bandwidth_down, tecnico, fecha
-        FROM datos
-        WHERE nodo = %s
-        ORDER BY placa, puerto;
-    """, (nodo,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    data = [
-        {
-            "placa": r[0],
-            "puerto": r[1],
-            "bandwidth_up": r[2],
-            "bandwidth_down": r[3],
-            "tecnico": r[4],
-            "fecha": r[5].strftime("%Y-%m-%d %H:%M:%S") if r[5] else None
-        } for r in rows
-    ]
-    return jsonify(data)
-
-# Guardar o actualizar bandwidth
-@app.route('/guardar', methods=['POST'])
-def guardar_bandwidth():
-    data = request.json
-    nodo = data.get("nodo")
-    placa = data.get("placa")
-    puerto = data.get("puerto")
-    up = data.get("bandwidth_up")
-    down = data.get("bandwidth_down")
-    tecnico = data.get("tecnico")
-    fecha = datetime.now()
-
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        UPDATE datos
-        SET bandwidth_up = %s,
-            bandwidth_down = %s,
-            tecnico = %s,
-            fecha = %s
-        WHERE nodo = %s AND placa = %s AND puerto = %s;
-    """, (up, down, tecnico, fecha, nodo, placa, puerto))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"status": "ok", "message": "Datos guardados correctamente ✅"})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# --- Punto de entrada ---
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
