@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import psycopg2
 import os
@@ -16,7 +16,7 @@ def get_connection():
 # --- Ruta principal ---
 @app.route("/")
 def home():
-    return "✅ API funcionando correctamente - Proyecto Nodos"
+    return render_template("index.html")
 
 # --- Test de conexión ---
 @app.route("/testdb")
