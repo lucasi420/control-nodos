@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Nodos</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background-color: #f4f8fb;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    background: linear-gradient(90deg, #0d6efd, #198754);
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 1.3em;
+    font-weight: 600;
+  }
+  main {
+    padding: 20px;
+    max-width: 900px;
+    margin: auto;
+  }
+  select, input {
+    padding: 8px;
+    font-size: 1em;
+    margin: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  button {
+    padding: 10px 15px;
+    font-size: 1em;
+    border: none;
+    border-radius: 6px;
+    background-color: #0d6efd;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover {
+    background-color: #0b5ed7;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+  }
+  th {
+    background-color: #198754;
+    color: white;
+  }
+  tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  .save-btn {
+    background-color: #198754;
+  }
+  .save-btn:hover {
+    background-color: #157347;
+  }
+  .status {
+    margin-top: 15px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+  <header>📡 Panel de Control de Nodos</header>
+  <main>
+    <label for="nodo">Seleccionar Nodo:</label>
+    <select id="nodo"></select>
+    <button onclick="cargarDatos()">Cargar Datos</button>
+
+    <table id="tablaDatos">
+      <thead>
+        <tr>
+          <th>Placa</th>
+          <th>Puerto</th>
+          <th>Subida (Mbps)</th>
+          <th>Bajada (Mbps)</th>
+          <th>Técnico</th>
+          <th>Fecha</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="status" id="status"></div>
+  </main>
+
+<script>
+const API_BASE = "https://control-nodos.onrender.com";
+
+async function cargarNodos() {
+  const res = await fetch(`${API_BASE}/nodos`);
+  const nodos = await res.json();
+  const select = document.getElementById("nodo");
+  select.innerHTML = "";
+  nodos.forEach(n => {
+    const opt = document.createElement("option");
+    opt.value = n;
+    opt.textContent = n;
+    select.appendChild(opt);
+  });
+}
+
+async function cargarDatos() {
+  const nodo = document.getElementById("nodo").value;
+  if (!nodo) return alert("Seleccioná un nodo");
+  const res = await fetch(`${API_BASE}/nodo/${nodo}`);
+  const datos = await res.json();
+  const tbody = document.querySelector("#tablaDatos tbody");
+  tbody.innerHTML = "";
+
+  datos.forEach(d => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.placa}</td>
+      <td>${d.puerto}</td>
+      <td><input type="number" value="${d.bandwidth_up || ''}" id="up-${d.placa}-${d.puerto}"></td>
+      <td><input type="number" value="${d.bandwidth_down || ''}" id="down-${d.placa}-${d.puerto}"></td>
+      <td><input type="text" value="${d.tecnico || ''}" id="tec-${d.placa}-${d.puerto}" placeholder="Nombre técnico"></td>
+      <td>${d.fecha || ''}</td>
+      <td><button class="save-btn" onclick="guardar('${nodo}', '${d.placa}', '${d.puerto}')">💾 Guardar</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function guardar(nodo, placa, puerto) {
+  const up = document.getElementById(`up-${placa}-${puerto}`).value;
+  const down = document.getElementById(`down-${placa}-${puerto}`).value;
+  const tecnico = document.getElementById(`tec-${placa}-${puerto}`).value;
+  const res = await fetch(`${API_BASE}/guardar`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ nodo, placa, puerto, bandwidth_up: up, bandwidth_down: down, tecnico })
+  });
+  const data = await res.json();
+  document.getElementById("status").textContent = data.message;
+  cargarDatos();
+}
+
+cargarNodos();
+</script>
+</body>
+</html>
