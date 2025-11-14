@@ -128,7 +128,7 @@ function generarCard(n) {
     return `
     <div class="nodo-card" id="card-${n.id}">
         <div class="nodo-header" onclick="toggle(${n.id})">
-            ${n.nodo} - Placa: **${n.placa ?? ''}** | Puerto: **${n.puerto ?? ''}**
+            ${n.nodo} - ${n.placa ?? ''} | PTO-${n.puerto ?? ''}
         </div>
 
         <div class="nodo-body" id="body-${n.id}">
@@ -206,9 +206,6 @@ async function guardarCambios(id) {
     
     // Recarga para obtener la nueva fecha/hora de modificación del servidor
     await cargarNodos(); 
-    
-    // Opcional: Reabrir el cuerpo del nodo después de recargar si estaba abierto
-    // toggle(id); 
 }
 
 cargarNodos();
