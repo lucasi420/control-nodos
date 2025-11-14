@@ -32,7 +32,6 @@
             background: #007bff;
             color: white;
             cursor: pointer;
-            /* Estilo para manejar la información de Placa y Puerto */
             white-space: nowrap; 
             overflow: hidden;
             text-overflow: ellipsis;
@@ -61,28 +60,9 @@
             background: #e9ecef;
         }
 
-        .campo input.editable {
-            background: white !important;
-        }
-        
-        /* Estilo para hacer que la hora de modificación resalte un poco */
-        .nodo-body .campo input[type="text"][disabled] {
+        .campo input[disabled] {
             font-weight: bold;
             color: #333;
-        }
-
-        button {
-            background: #28a745;
-            border: none;
-            padding: 10px 16px;
-            color: white;
-            font-size: 15px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        button.editar {
-            background: #007bff;
         }
     </style>
 </head>
@@ -94,7 +74,7 @@
 <div id="contenedor"></div>
 
 <script>
-// Función auxiliar para dar un formato legible a la fecha
+// Formato de fecha
 function formatoFecha(fechaString) {
     if (!fechaString) return 'Nunca guardado';
     const date = new Date(fechaString);
@@ -105,11 +85,12 @@ function formatoFecha(fechaString) {
         hour: '2-digit', 
         minute: '2-digit', 
         second: '2-digit',
-        hour12: false // Formato 24 horas
+        hour12: false
     };
     return date.toLocaleDateString('es-ES', options).replace(',', '') + ' hrs';
 }
 
+// Cargar nodos
 async function cargarNodos() {
     const res = await fetch('/nodos');
     const data = await res.json();
@@ -123,8 +104,8 @@ async function cargarNodos() {
 }
 
 function generarCard(n) {
-    const fechaFormateada = formatoFecha(n.ultima_modificacion); // Usar el nuevo campo
-    
+    const fechaFormateada = formatoFecha(n.ultima_modificacion);
+
     return `
     <div class="nodo-card" id="card-${n.id}">
         <div class="nodo-header" onclick="toggle(${n.id})">
@@ -140,20 +121,14 @@ function generarCard(n) {
 
             <div class="campo">
                 <label>Bandwidth UP</label>
-                <input type="number" id="up-${n.id}" value="${n.bandwidth_up ?? ''}" disabled>
+                <input type="number" value="${n.bandwidth_up ?? ''}" disabled>
             </div>
 
             <div class="campo">
                 <label>Bandwidth DOWN</label>
-                <input type="number" id="down-${n.id}" value="${n.bandwidth_down ?? ''}" disabled>
+                <input type="number" value="${n.bandwidth_down ?? ''}" disabled>
             </div>
 
-            <div class="campo">
-                <label>Técnico</label>
-                <input type="text" id="tec-${n.id}" value="${n.tecnico ?? ''}" disabled>
-            </div>
-
-            <button class="editar" id="btn-${n.id}" onclick="editarGuardar(${n.id})">Editar</button>
         </div>
     </div>
     `;
@@ -162,50 +137,6 @@ function generarCard(n) {
 function toggle(id) {
     const body = document.getElementById("body-" + id);
     body.style.display = body.style.display === "block" ? "none" : "block";
-}
-
-function editarGuardar(id) {
-    const btn = document.getElementById("btn-" + id);
-    const isEditing = btn.innerText === "Guardar";
-
-    if (isEditing) {
-        guardarCambios(id);
-    } else {
-        activarEdicion(id);
-    }
-}
-
-function activarEdicion(id) {
-    // Solo incluimos los campos editables: up, down, tec
-    const fields = ["up", "down", "tec"]; 
-
-    fields.forEach(f => {
-        const el = document.getElementById(`${f}-${id}`);
-        el.disabled = false;
-        el.classList.add("editable");
-    });
-
-    document.getElementById("btn-" + id).innerText = "Guardar";
-    document.getElementById("btn-" + id).style.background = "#28a745";
-}
-
-async function guardarCambios(id) {
-    const up = document.getElementById(`up-${id}`).value;
-    const down = document.getElementById(`down-${id}`).value;
-    const tec = document.getElementById(`tec-${id}`).value;
-
-    await fetch(`/nodo/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            bandwidth_up: up,
-            bandwidth_down: down,
-            tecnico: tec
-        })
-    });
-    
-    // Recarga para obtener la nueva fecha/hora de modificación del servidor
-    await cargarNodos(); 
 }
 
 cargarNodos();
