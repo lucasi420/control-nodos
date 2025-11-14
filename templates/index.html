@@ -32,6 +32,10 @@
             background: #007bff;
             color: white;
             cursor: pointer;
+            /* Estilo para manejar la información de Placa y Puerto */
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .nodo-body {
@@ -60,6 +64,12 @@
         .campo input.editable {
             background: white !important;
         }
+        
+        /* Estilo para hacer que la hora de modificación resalte un poco */
+        .nodo-body .campo input[type="text"][disabled] {
+            font-weight: bold;
+            color: #333;
+        }
 
         button {
             background: #28a745;
@@ -84,6 +94,22 @@
 <div id="contenedor"></div>
 
 <script>
+// Función auxiliar para dar un formato legible a la fecha
+function formatoFecha(fechaString) {
+    if (!fechaString) return 'Nunca guardado';
+    const date = new Date(fechaString);
+    const options = { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: false // Formato 24 horas
+    };
+    return date.toLocaleDateString('es-ES', options).replace(',', '') + ' hrs';
+}
+
 async function cargarNodos() {
     const res = await fetch('/nodos');
     const data = await res.json();
@@ -97,21 +123,19 @@ async function cargarNodos() {
 }
 
 function generarCard(n) {
+    const fechaFormateada = formatoFecha(n.ultima_modificacion); // Usar el nuevo campo
+    
     return `
     <div class="nodo-card" id="card-${n.id}">
         <div class="nodo-header" onclick="toggle(${n.id})">
-            ${n.nodo}
+            ${n.nodo} - Placa: **${n.placa ?? ''}** | Puerto: **${n.puerto ?? ''}**
         </div>
 
         <div class="nodo-body" id="body-${n.id}">
+            
             <div class="campo">
-                <label>Placa</label>
-                <input type="text" id="placa-${n.id}" value="${n.placa ?? ''}" disabled>
-            </div>
-
-            <div class="campo">
-                <label>Puerto</label>
-                <input type="text" id="puerto-${n.id}" value="${n.puerto ?? ''}" disabled>
+                <label>Última Modificación</label>
+                <input type="text" value="${fechaFormateada}" disabled> 
             </div>
 
             <div class="campo">
@@ -152,7 +176,8 @@ function editarGuardar(id) {
 }
 
 function activarEdicion(id) {
-    const fields = ["placa", "puerto", "up", "down", "tec"];
+    // Solo incluimos los campos editables: up, down, tec
+    const fields = ["up", "down", "tec"]; 
 
     fields.forEach(f => {
         const el = document.getElementById(`${f}-${id}`);
@@ -165,8 +190,6 @@ function activarEdicion(id) {
 }
 
 async function guardarCambios(id) {
-    const placa = document.getElementById(`placa-${id}`).value;
-    const puerto = document.getElementById(`puerto-${id}`).value;
     const up = document.getElementById(`up-${id}`).value;
     const down = document.getElementById(`down-${id}`).value;
     const tec = document.getElementById(`tec-${id}`).value;
@@ -175,24 +198,17 @@ async function guardarCambios(id) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            placa,
-            puerto,
             bandwidth_up: up,
             bandwidth_down: down,
             tecnico: tec
         })
     });
-
-    const fields = ["placa", "puerto", "up", "down", "tec"];
-
-    fields.forEach(f => {
-        const el = document.getElementById(`${f}-${id}`);
-        el.disabled = true;
-        el.classList.remove("editable");
-    });
-
-    document.getElementById("btn-" + id).innerText = "Editar";
-    document.getElementById("btn-" + id).style.background = "#007bff";
+    
+    // Recarga para obtener la nueva fecha/hora de modificación del servidor
+    await cargarNodos(); 
+    
+    // Opcional: Reabrir el cuerpo del nodo después de recargar si estaba abierto
+    // toggle(id); 
 }
 
 cargarNodos();
