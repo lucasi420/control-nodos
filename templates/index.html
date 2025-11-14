@@ -128,7 +128,7 @@ function generarCard(n) {
     return `
     <div class="nodo-card" id="card-${n.id}">
         <div class="nodo-header" onclick="toggle(${n.id})">
-            ${n.nodo} - ${n.placa ?? ''} | PTO-${n.puerto ?? ''}
+            ${n.nodo} - ${n.placa ?? ''} | ${n.puerto ?? ''}
         </div>
 
         <div class="nodo-body" id="body-${n.id}">
